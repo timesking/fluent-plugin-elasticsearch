@@ -3,6 +3,7 @@ require 'date'
 require 'excon'
 require 'elasticsearch'
 require 'uri'
+require 'fluent/timezone'
 begin
   require 'strptime'
 rescue LoadError
@@ -49,6 +50,7 @@ class Fluent::ElasticsearchOutput < Fluent::BufferedOutput
   config_param :remove_keys_on_update_key, :string, :default => nil
   config_param :flatten_hashes, :bool, :default => false
   config_param :flatten_hashes_separator, :string, :default => "_"
+  config_param :timezone, :string, default: nil
 
   include Fluent::SetTagKeyMixin
   config_set_default :include_tag_key, false
@@ -61,6 +63,17 @@ class Fluent::ElasticsearchOutput < Fluent::BufferedOutput
   def configure(conf)
     super
     @time_parser = TimeParser.new(@time_key_format, @router)
+
+    #print "tz:#{conf['timezone']}, utc_index:#{conf['utc_index']}\n"
+    if conf['timezone']
+      @timezone = conf['timezone']
+      Fluent::Timezone.validate!(@timezone)
+    elsif @utc_index
+      @timezone = "+0000"
+    else
+      @timezone = Time.now.strftime('%z')
+    end
+    @_formatter = Fluent::Timezone.formatter(@timezone, @logstash_dateformat)
 
     if @remove_keys
       @remove_keys = @remove_keys.split(/\s*,\s*/)
@@ -270,8 +283,10 @@ class Fluent::ElasticsearchOutput < Fluent::BufferedOutput
           dt = Time.at(time).to_datetime
           record.merge!({"@timestamp" => dt.to_s})
         end
-        dt = dt.new_offset(0) if @utc_index
-        target_index = "#{@logstash_prefix}-#{dt.strftime(@logstash_dateformat)}"
+        # dt = dt.new_offset(0) if @utc_index
+        # target_index = "#{@logstash_prefix}-#{dt.strftime(@logstash_dateformat)}"
+
+        target_index = "#{@logstash_prefix}-#{@_formatter.call(dt.to_time)}"
       else
         target_index = @index_name
       end
