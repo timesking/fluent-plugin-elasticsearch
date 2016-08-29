@@ -187,6 +187,24 @@ utc_index true
 
 By default, the records inserted into index `logstash-YYMMDD` with UTC (Coordinated Universal Time). This option allows to use local time if you describe utc_index to false.
 
+### timezone
+
+```
+timezone Asia/Shanghai
+```
+By setting this parameter, one can parse the time value in the specified timezone. The following formats are accepted:
+
+    [+–]HH:MM (e.g. “+09:00”)
+    [+–]HHMM (e.g. “+0900”)
+    [+–]HH (e.g. “+09”)
+    Region/Zone (e.g. “Asia/Tokyo”)
+    Region/Zone/Zone (e.g. “America/Argentina/Buenos_Aires”)
+
+timezone is same as what's described in [fluentd-s3](http://docs.fluentd.org/articles/out_s3).
+The timezone set in this parameter takes precedence over utc_index. if timezone appears, the utc_index will be ignored.
+
+
+
 ### target_index_key
 
 Tell this plugin to find the index name to write to in the record under this key in preference to other mechanisms. Key can be specified as path to nested record using dot ('.') as a separator.
@@ -356,12 +374,12 @@ remove_keys_on_update_key keys_to_skip
 
 The write_operation can be any of:
 
-| Operation | Description          |
+| Operation       | Description                                                                                        |
 | ------------- | ----------- |
-| index (default)      | new data is added while existing data (based on its id) is replaced (reindexed).|
-| create      | adds new data - if the data already exists (based on its id), the op is skipped.|
-| update      | updates existing data (based on its id). If no data is found, the op is skipped.|
-| upsert      | known as merge or insert if the data does not exist, updates if the data exists (based on its id).|
+| index (default) | new data is added while existing data (based on its id) is replaced (reindexed).                   |
+| create          | adds new data - if the data already exists (based on its id), the op is skipped.                   |
+| update          | updates existing data (based on its id). If no data is found, the op is skipped.                   |
+| upsert          | known as merge or insert if the data does not exist, updates if the data exists (based on its id). |
 
 **Please note, id is required in create, update, and upsert scenario. Without id, the message will be dropped.**
 
